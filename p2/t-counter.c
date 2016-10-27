@@ -39,7 +39,6 @@ int main(int argc, char *argv[])
   struct addrinfo hints;
   struct addrinfo *rp, *result;
   int socket_number;
-  int len;
   int user_length;
   int sent_bytes;
   int read_bytes;
@@ -183,8 +182,9 @@ ssize_t readchunck( int sockfd, void *buffer, size_t len )
   /* Define readchunck to return exactly len bytes unless an error occurs or the socket closes. */
   int recv_bytes;
   int close_status;
+  int length = (int)len; // Casting len as int.
   bzero(buffer, len); // Clear the buffer. 
-  recv_bytes = recv(sockfd, buffer, len, 0);
+  recv_bytes = recv(sockfd, buffer, length, 0);
   
   if (recv_bytes == -1) //Error if recv returns -1
   {
@@ -203,7 +203,7 @@ ssize_t readchunck( int sockfd, void *buffer, size_t len )
     }
     return recv_bytes;
   }
-  else if (recv_bytes == len) // If recv returns users length then return the recv_bytes.
+  else if (recv_bytes == length) // If recv returns users length then return the recv_bytes.
   {
     return recv_bytes;
   }
@@ -221,9 +221,9 @@ ssize_t readchunck( int sockfd, void *buffer, size_t len )
      * index where we stored the data. Make sure we don't over-lap the data we 
      * have aready stored on the next call. Need to add an offset to the buffer pointer
      * when we call recv again. */
-    while(recv_bytes != len)
+    while(recv_bytes != length)
     {
-      temp_len = len;
+      temp_len = length;
       temp_recv_bytes = recv_bytes;
       new_len = temp_len - temp_recv_bytes; // New len = len - len already parse.
       add_bytes = recv(sockfd, (char*)buffer + recv_bytes, new_len, 0);
