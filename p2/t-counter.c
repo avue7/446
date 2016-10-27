@@ -202,11 +202,11 @@ ssize_t readchunck( int sockfd, void *buffer, size_t len )
     int temp_len;
     int temp_recv_bytes; 
     /* If recv_bytes != len, then we must keep calling it to get the rest of the bytes.
-        **Note: general purpose void* buffer points to the first element of the buffer 
-        only, so when we store the data into the buffer we must remember it's last
-        index where we stored the data. Make sure we don't over-lap the data we 
-        have aready stored on the next call. Need to add an offset to the buffer pointer
-        when we call recv again. */
+     * **Note: general purpose void* buffer points to the first element of the buffer 
+     * only, so when we store the data into the buffer we must remember it's last
+     * index where we stored the data. Make sure we don't over-lap the data we 
+     * have aready stored on the next call. Need to add an offset to the buffer pointer
+     * when we call recv again. */
     while(recv_bytes != len)
     {
       temp_len = len;
@@ -214,10 +214,13 @@ ssize_t readchunck( int sockfd, void *buffer, size_t len )
       new_len = temp_len - temp_recv_bytes; // New len = len - len already parse.
       add_bytes = recv(sockfd, (char*)buffer + recv_bytes, new_len, 0);
       recv_bytes = recv_bytes + add_bytes;  // Update the recv_bytes to include new bytes recv. 
+      
       //printf("New bytes to add to recv_bytes is: %i\n", add_bytes);  /*For Debugging*/
       //printf("RECV_BYTES IS NOW: %i\n", recv_bytes);                   /*For Debugging*/
       
-      /* If we have 0 bytes to add, that means we are at EOF. Break from loop */
+      /* If we have 0 bytes to add, that means we are at EOF. Break from loop
+       * This can also be added to the while loop condition, but it's easier to read
+       * from here */
       if (add_bytes == 0)
       {
         break;
