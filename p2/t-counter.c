@@ -109,6 +109,11 @@ int main(int argc, char *argv[])
 
   /* Send our request to the connected server */
   sent_bytes = send(socket_number, REQUEST, sizeof REQUEST, 0);
+  if (sent_bytes == -1)
+  {
+    printf("Error while sending: %s.\n", strerror(errno));
+    exit(1);
+  }
   //printf("Sending %i bytes to socket_number %i.\n", sent_bytes, socket_number); /*For debugging*/
 
 /*################### MAIN WHILE LOOP STARTS ###################*/
@@ -149,8 +154,10 @@ int main(int argc, char *argv[])
     printf("Number of %s instances: %i\n", argv[2], count);
   }
 
-  //Close the socket after we are done with the file. 
+  /* Close the socket after we are done with the file. Note: readchunck already takes care of this after
+   * its last call returns a 0 byte. */ 
   //close(socket_number);
+
   return 0;
 }
 
@@ -175,6 +182,7 @@ ssize_t readchunck( int sockfd, void *buffer, size_t len )
 {
   /* Define readchunck to return exactly len bytes unless an error occurs or the socket closes. */
   int recv_bytes;
+  int close_status;
   bzero(buffer, len); // Clear the buffer. 
   recv_bytes = recv(sockfd, buffer, len, 0);
   
@@ -187,7 +195,12 @@ ssize_t readchunck( int sockfd, void *buffer, size_t len )
     A recv_bytes of zero may mean socket was closed normally */
   else if (recv_bytes == 0) 
   {
-    close(sockfd);
+    close_status = close(sockfd);
+    if (close_status == -1)
+    {
+      printf("Error while closing: %s.\n", strerror(errno));
+      return -1;
+    }
     return recv_bytes;
   }
   else if (recv_bytes == len) // If recv returns users length then return the recv_bytes.
@@ -201,6 +214,7 @@ ssize_t readchunck( int sockfd, void *buffer, size_t len )
     int add_bytes;
     int temp_len;
     int temp_recv_bytes; 
+    
     /* If recv_bytes != len, then we must keep calling it to get the rest of the bytes.
      * **Note: general purpose void* buffer points to the first element of the buffer 
      * only, so when we store the data into the buffer we must remember it's last
@@ -213,11 +227,12 @@ ssize_t readchunck( int sockfd, void *buffer, size_t len )
       temp_recv_bytes = recv_bytes;
       new_len = temp_len - temp_recv_bytes; // New len = len - len already parse.
       add_bytes = recv(sockfd, (char*)buffer + recv_bytes, new_len, 0);
-      recv_bytes = recv_bytes + add_bytes;  // Update the recv_bytes to include new bytes recv. 
       
-      //printf("New bytes to add to recv_bytes is: %i\n", add_bytes);  /*For Debugging*/
-      //printf("RECV_BYTES IS NOW: %i\n", recv_bytes);                   /*For Debugging*/
-      
+      if (add_bytes == -1)
+      {
+        printf("Error while calling recv to fill buffer to user's length: %s\n", strerror(errno));
+        return -1;
+      }
       /* If we have 0 bytes to add, that means we are at EOF. Break from loop
        * This can also be added to the while loop condition, but it's easier to read
        * from here */
@@ -225,6 +240,11 @@ ssize_t readchunck( int sockfd, void *buffer, size_t len )
       {
         break;
       }
+      
+      recv_bytes = recv_bytes + add_bytes;  // Update the recv_bytes to include new bytes recv. 
+      
+      //printf("New bytes to add to recv_bytes is: %i\n", add_bytes);  /*For Debugging*/
+      //printf("RECV_BYTES IS NOW: %i\n", recv_bytes);                   /*For Debugging*/
     }
     return recv_bytes;
   }
