@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
 
   /* Initialization */
   char *host;
-  user_length = atoi(argv[1]); //Need to convert the string to an integer.
+  
   char buffer[1024]; //Setting our buffer to a good size.
   count = 0; //Making sure our count starts at 0.
   
@@ -55,6 +55,7 @@ int main(int argc, char *argv[])
   {
     /* Must cast our SERVER_NAME variable as a char* to use in our functions */
     host = (char*)SERVER_NAME;
+    user_length = atoi(argv[1]); //Need to convert the string to an integer.
   }
   else 
   {
@@ -113,7 +114,6 @@ int main(int argc, char *argv[])
     printf("Error while sending: %s.\n", strerror(errno));
     exit(1);
   }
-  //printf("Sending %i bytes to socket_number %i.\n", sent_bytes, socket_number); /*For debugging*/
 
 /*################### MAIN WHILE LOOP STARTS ###################*/
   while(rp != NULL) //While connection is established and pointer rp to address socket exists.
@@ -123,10 +123,16 @@ int main(int argc, char *argv[])
     /* Call the readchunck function */
     read_bytes = readchunck(socket_number, buffer, user_length);
     
+    printf("%s", buffer);
     /* When we have no more bytes to read we have reached the eof */
     if (read_bytes <= 0)
     {
       break;
+    }
+    if (read_bytes == -1)
+    {
+      printf("Error occurred in readchunck. Exiting program.\n");
+      exit(1);
     }
     
     char* haystack = buffer; // Set the buffer as haystack 
@@ -138,7 +144,6 @@ int main(int argc, char *argv[])
       count++; // We found a match, add it to our count.
       haystack = haystack + strlen(needle); // Search the rest of the string.
     }
-    //printf("%s\n", buffer); /*For debugging*/
   }
 /*################### MAIN WHILE LOOP ENDS #####################*/
 
@@ -242,9 +247,6 @@ ssize_t readchunck( int sockfd, void *buffer, size_t len )
       }
       
       recv_bytes = recv_bytes + add_bytes;  // Update the recv_bytes to include new bytes recv. 
-      
-      //printf("New bytes to add to recv_bytes is: %i\n", add_bytes);  /*For Debugging*/
-      //printf("RECV_BYTES IS NOW: %i\n", recv_bytes);                   /*For Debugging*/
     }
     return recv_bytes;
   }
